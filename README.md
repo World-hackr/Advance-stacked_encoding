@@ -1,73 +1,50 @@
-# Wave Envelope Drawing & Export
+# Audio Envelope Processing Tool
 
-This repository contains a Python script that allows you to:
-1. **Load multiple `.wav` files** for simultaneous editing.
-2. **Draw custom amplitude envelopes** on each waveform interactively.
-3. **Preview** your drawn modifications in real time.
-4. **Save** the resulting modifications into three distinct PNG outputs:
-   - **final_drawing.png**: original (faint) wave + drawn envelopes  
-   - **natural_lang.png**: modified wave + drawn envelopes  
-   - **wave_comparison.png**: side‐by‐side look (original vs. modified), each with partial translucency
-5. **Export** CSV files of your envelope data and WAV files of the modified audio.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Interactive Drawing Keys](#interactive-drawing-keys)
-- [Color Picking Flow](#color-picking-flow)
-- [Output Files](#output-files)
-- [License](#license)
-
----
+## Overview
+This tool provides an interactive interface to process audio (`.wav`) files by allowing users to draw custom envelopes over the waveform. It supports color customization, real-time audio preview, and produces multiple output files including visualizations, envelope data, and modified audio. The tool also features automatic stereo to mono conversion and allows repeated processing of different file sets without restarting the program.
 
 ## Features
+- **Multiple File Processing:**  
+  - Process one or more `.wav` files simultaneously by creating multiple divisions (subplots).
+  - After processing a set of files, the user is prompted to process another set without needing to restart the program.
 
-- **Multiple Subplots**: Load any number of `.wav` files, each shown in its own subplot.
-- **Interactive Drawing**: Click and drag on each subplot to define a new amplitude envelope.
-- **Preview** (`p` key): Hear your modified wave in real time.
-- **Undo** (`u` key) and **Reset** (`r` key): Correct mistakes or start fresh.
-- **Three PNG Outputs** (same layout, different wave lines):
-  1. **final_drawing.png**  
-  2. **natural_lang.png**  
-  3. **wave_comparison.png**
-- **Separate Color Schemes**:  
-  - **Canvas** colors chosen right after specifying `.wav` files.  
-  - **final_drawing**, **natural_lang**, and **wave_comparison** can each have their own color scheme (or reuse the previous one).
-- **Console Color Swatches** (ANSI/true‐color) for easier selection (if your terminal supports them).
+- **Stereo to Mono Conversion:**  
+  - If an input audio file is stereo, the tool automatically converts it to mono by averaging the channels.
 
----
+- **Interactive Envelope Drawing:**  
+  - **Mouse-based Drawing:** Click and drag on the waveform to create envelope curves.
+  - **Dual Envelopes:** Draw separate positive and negative envelopes.
+  - **Live Update:** The envelope drawing is updated in real time as you move the mouse.
 
-## How It Works
+- **Keyboard Shortcuts:**  
+  - **`p` (Preview):** Preview the modified audio based on the drawn envelope.
+  - **`r` (Reset):** Reset the current envelope drawing.
+  - **`u` (Undo):** Undo the last drawing stroke.
 
-1. **Insert `.wav` Files**:  
-   - You’ll be prompted for the number of `.wav` files, then for each file path.
-   - A new folder is created based on the first file’s name; all `.wav` files are copied there.
+- **Color Customization:**  
+  - **Drawing Canvas Color Picker:** Customize the background and envelope colors before starting the drawing.
+  - **Final Drawing Customization:** Change colors after drawing is complete to adjust the final visual output.
+  - **Additional Phases:** Customize colors for the "natural_lang" and "wave_comparison" visualizations.
+  
+- **Output Generation:**  
+  - **Images:** Saves multiple PNG files:
+    - `final_drawing.png` – The initial drawing with your customizations.
+    - `natural_lang.png` – A visualization with the faint original wave removed and a highlighted modified wave.
+    - `wave_comparison.png` – A side-by-side comparison of the original and modified waveforms.
+  - **CSV Files:** Exports envelope data (index, positive envelope, negative envelope) for each audio file.
+  - **Modified Audio Files:** Saves the modified audio (with applied envelopes) as new `.wav` files.
 
-2. **Pick Drawing Canvas Colors**:  
-   - Right after you specify `.wav` files, you can choose custom colors (background, positive envelope, negative envelope) or stick with the defaults.
-
-3. **Draw**:  
-   - The script displays a figure with one subplot per `.wav`.
-   - You can left‐click + drag to draw positive or negative envelopes.
-   - Press Enter in the console to finalize.
-
-4. **Color‐Pick for Each PNG**:  
-   - **final_drawing.png**: If you choose custom colors, the script re‐colors everything and saves it. Otherwise, it uses the canvas colors.
-   - **natural_lang.png**: Removes the faint wave, adds the final wave lines. Optionally re‐color before saving.
-   - **wave_comparison.png**: Removes the final wave lines, then adds original + modified wave lines with partial alpha. Again, optionally re‐color.
-
-Because all three PNGs are saved from the **same** figure, their layout and axis scales match exactly. The only difference is which wave lines are visible and which colors you choose.
-
----
+## Requirements
+- Python 3.x
+- Required packages:
+  - `numpy`
+  - `matplotlib`
+  - `scipy`
+  - `sounddevice`
+- A system capable of audio playback (for the preview feature).
 
 ## Installation
-
-1. **Clone or Download** this repository:
+1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/YourUsername/wave-envelope-drawing.git
-   cd wave-envelope-drawing
+   git clone https://github.com/yourusername/your-repo.git
+   cd your-repo
