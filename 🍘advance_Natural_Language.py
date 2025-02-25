@@ -549,4 +549,9 @@ def process_multi_division():
     plt.close()
 
 if __name__ == '__main__':
-    process_multi_division()
+    while True:
+        process_multi_division()
+        cont = input("\nDo you want to process another set of files? (y/n): ").strip().lower()
+        if cont != 'y':
+            print("Exiting program.")
+            break
