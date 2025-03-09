@@ -1,50 +1,65 @@
-# Audio Envelope Processing Tool
+This repository contains a multi-division wave processing tool with the following features:
 
-## Overview
-This tool provides an interactive interface to process audio (`.wav`) files by allowing users to draw custom envelopes over the waveform. It supports color customization, real-time audio preview, and produces multiple output files including visualizations, envelope data, and modified audio. The tool also features automatic stereo to mono conversion and allows repeated processing of different file sets without restarting the program.
+Custom Wave Generation (Presets/Manual)
 
-## Features
-- **Multiple File Processing:**  
-  - Process one or more `.wav` files simultaneously by creating multiple divisions (subplots).
-  - After processing a set of files, the user is prompted to process another set without needing to restart the program.
+Users can either pick a numeric preset (Sine, Square, Triangle, Sawtooth) or manually specify frequency, samples-per-wavelength, and periods.
+Output filename is also user-defined.
+Stacked Waveforms
 
-- **Stereo to Mono Conversion:**  
-  - If an input audio file is stereo, the tool automatically converts it to mono by averaging the channels.
+The user can process multiple wavefiles in one go, creating a subplot for each.
+Each subplot can be either an existing .wav file or a newly generated custom wave.
+Interactive Drawing
 
-- **Interactive Envelope Drawing:**  
-  - **Mouse-based Drawing:** Click and drag on the waveform to create envelope curves.
-  - **Dual Envelopes:** Draw separate positive and negative envelopes.
-  - **Live Update:** The envelope drawing is updated in real time as you move the mouse.
+Each wave can be given a custom “envelope” for positive and negative portions by click-and-drag on the subplot.
+Keyboard shortcuts:
+p: Preview the audio (applies to all subplots).
+r: Reset envelope for the active subplot.
+u: Undo the last stroke for the active subplot.
+No Panning
 
-- **Keyboard Shortcuts:**  
-  - **`p` (Preview):** Preview the modified audio based on the drawn envelope.
-  - **`r` (Reset):** Reset the current envelope drawing.
-  - **`u` (Undo):** Undo the last drawing stroke.
+The Matplotlib toolbar is disabled so there’s no accidental panning or zooming during drawing.
+Color Pickers
 
-- **Color Customization:**  
-  - **Drawing Canvas Color Picker:** Customize the background and envelope colors before starting the drawing.
-  - **Final Drawing Customization:** Change colors after drawing is complete to adjust the final visual output.
-  - **Additional Phases:** Customize colors for the "natural_lang" and "wave_comparison" visualizations.
-  
-- **Output Generation:**  
-  - **Images:** Saves multiple PNG files:
-    - `final_drawing.png` – The initial drawing with your customizations.
-    - `natural_lang.png` – A visualization with the faint original wave removed and a highlighted modified wave.
-    - `wave_comparison.png` – A side-by-side comparison of the original and modified waveforms.
-  - **CSV Files:** Exports envelope data (index, positive envelope, negative envelope) for each audio file.
-  - **Modified Audio Files:** Saves the modified audio (with applied envelopes) as new `.wav` files.
+final_drawing: Shows the user-drawn envelopes for each wave.
+natural_lang: Displays a strictly sign-subdivided wave (no dashed segments) with negative color for < 0 and positive color for ≥ 0.
+wave_comparison: Compares original vs. modified wave on each subplot, with the modified wave partially transparent so the original wave can peek through.
+Consistent Aspect Ratio
 
-## Requirements
-- Python 3.x
-- Required packages:
-  - `numpy`
-  - `matplotlib`
-  - `scipy`
-  - `sounddevice`
-- A system capable of audio playback (for the preview feature).
+The script forces set_aspect('auto') and uniform axis margins in reapply_colors(...), preventing wave compression even with multiple subplots. All images (final_drawing, natural_lang, wave_comparison) maintain a visually consistent axis scale.
+CSV + Modified WAV Output
 
-## Installation
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/yourusername/your-repo.git
-   cd your-repo
+For each subplot, a .csv file is generated containing the positive and negative envelope data.
+A modified .wav file (named future_<originalName>.wav) is created with the user’s drawn envelope applied.
+Usage
+Clone/Download this repository.
+Install dependencies:
+bash
+Copy
+Edit
+pip install matplotlib numpy scipy sounddevice
+Run the main script:
+bash
+Copy
+Edit
+python 🍘Natural_Language.py
+Choose how many subplots (e.g. 3). For each subplot:
+(1) Use an existing .wav file, or
+(2) Generate a custom wave (with presets/manual)
+Draw envelopes on each subplot:
+Click and drag above zero for positive envelope, below zero for negative envelope.
+Keyboard shortcuts:
+p = Preview all subplots’ audio
+r = Reset the active subplot’s envelope
+u = Undo the last stroke on the active subplot
+Color Pickers prompt for each output phase:
+final_drawing → shows the user’s drawn envelope(s).
+natural_lang → single continuous wave with negative vs. positive coloring.
+wave_comparison → original wave vs. modified wave with partial transparency.
+Outputs:
+A new folder is created based on the first wave’s filename.
+Inside that folder, you’ll find:
+final_drawing.png
+natural_lang.png
+wave_comparison.png
+envelope_*.csv (one per subplot)
+*_future_<originalName>.wav (the modified audio per subplot)
