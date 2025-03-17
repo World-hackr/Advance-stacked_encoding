@@ -1,31 +1,20 @@
 import matplotlib
-# Disable Matplotlib’s default toolbar so there’s no accidental panning/zooming
 matplotlib.rcParams['toolbar'] = 'None'
 
-import os
-import sys
-import shutil
+import os, sys, shutil, csv
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 from scipy.io import wavfile
-import csv
 import sounddevice as sd
 from scipy import signal
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.widgets import Slider
 
 ##############################################################################
 # 1) CUSTOM WAVE GENERATION (Presets or Manual)
 ##############################################################################
 def generate_custom_wave():
-    """
-    Lets the user pick from numeric presets (sine, square, triangle, sawtooth)
-    or do a manual entry (frequency, spw, periods). The user also chooses the
-    output filename for the .wav file.
-    Returns:
-        out_file (str): The filename of the newly generated .wav file.
-    """
     print("\n=== Custom Frequency Waveform Generation ===")
     print("Choose a preset or go manual:")
     print("  1) Sine wave     (freq=440, spw=100, periods=10)")
@@ -33,43 +22,23 @@ def generate_custom_wave():
     print("  3) Triangle wave (freq=100, spw=200, periods=5)")
     print("  4) Sawtooth wave (freq=50,  spw=120, periods=15)")
     print("  5) Manual entry")
-
     choice = input("Enter 1-5: ").strip()
-
-    # Default wave parameters
     wave_type = "sine"
-    freq = 440.0
-    spw  = 100
-    periods = 10
-
+    freq, spw, periods = 440.0, 100, 10
     if choice == "1":
-        wave_type = "sine"
-        freq = 440
-        spw  = 100
-        periods = 10
         print("\nPreset 1: Sine wave (freq=440, spw=100, periods=10)")
     elif choice == "2":
-        wave_type = "square"
-        freq = 220
-        spw  = 80
-        periods = 20
+        wave_type, freq, spw, periods = "square", 220, 80, 20
         print("\nPreset 2: Square wave (freq=220, spw=80, periods=20)")
     elif choice == "3":
-        wave_type = "triangle"
-        freq = 100
-        spw  = 200
-        periods = 5
+        wave_type, freq, spw, periods = "triangle", 100, 200, 5
         print("\nPreset 3: Triangle wave (freq=100, spw=200, periods=5)")
     elif choice == "4":
-        wave_type = "sawtooth"
-        freq = 50
-        spw  = 120
-        periods = 15
+        wave_type, freq, spw, periods = "sawtooth", 50, 120, 15
         print("\nPreset 4: Sawtooth wave (freq=50, spw=120, periods=15)")
     elif choice == "5":
         print("\nManual Entry:")
-        print("Wave Type (enter 1-4):")
-        print("  1) sine\n  2) square\n  3) triangle\n  4) sawtooth")
+        print("Wave Type (enter 1-4):\n  1) sine\n  2) square\n  3) triangle\n  4) sawtooth")
         wt_choice = input("Wave type (1-4): ").strip()
         if wt_choice == "2":
             wave_type = "square"
@@ -81,22 +50,16 @@ def generate_custom_wave():
             wave_type = "sine"
         try:
             freq = float(input("Enter frequency in Hz (e.g. 440): "))
-            spw  = int(input("Enter samples per wavelength (e.g. 100): "))
+            spw = int(input("Enter samples per wavelength (e.g. 100): "))
             periods = int(input("Enter number of periods (e.g. 10): "))
         except ValueError:
-            print("Invalid input. Using defaults: wave=sine, freq=440, spw=100, periods=10.")
-            wave_type = "sine"
-            freq = 440.0
-            spw = 100
-            periods = 10
+            print("Invalid input. Using defaults: sine, 440 Hz, 100 spw, 10 periods.")
     else:
-        print("\nInvalid choice, using default sine wave with freq=440, spw=100, periods=10.")
-
+        print("\nInvalid choice, using default sine wave.")
     total_samples = spw * periods
     sample_rate = int(freq * spw)
     duration = periods / freq
     t = np.linspace(0, duration, total_samples, endpoint=False)
-
     if wave_type == "square":
         wave = np.sign(np.sin(2*np.pi*freq*t))
     elif wave_type == "triangle":
@@ -106,16 +69,13 @@ def generate_custom_wave():
     else:
         wave = np.sin(2*np.pi*freq*t)
     wave = wave / np.max(np.abs(wave))
-
     out_file = input("Enter filename for your custom wave (e.g. my_custom_wave.wav): ").strip()
     if not out_file:
         out_file = "my_custom_wave.wav"
     elif not out_file.lower().endswith(".wav"):
         out_file += ".wav"
     wavfile.write(out_file, sample_rate, (wave * 32767).astype(np.int16))
-
-    print(f"\nGenerated {wave_type} wave, freq={freq} Hz, sample_rate={sample_rate} Hz, "
-          f"samples={total_samples}, duration={duration*1000:.2f} ms.")
+    print(f"\nGenerated {wave_type} wave, freq={freq} Hz, sample_rate={sample_rate} Hz, samples={total_samples}, duration={duration*1000:.2f} ms.")
     print(f"Custom wave saved to {out_file}")
     return out_file
 
@@ -131,7 +91,7 @@ def show_color_options(options, title):
             g = int(hex_code[3:5], 16)
             b = int(hex_code[5:7], 16)
         except:
-            r, g, b = (255, 255, 255)
+            r, g, b = (255,255,255)
         ansi_color = f"\033[38;2;{r};{g};{b}m"
         ansi_reset = "\033[0m"
         print(f"{idx:<5} {name:<20} {hex_code:<10}  {ansi_color}██{ansi_reset}")
@@ -145,108 +105,62 @@ def choose_color(options, prompt):
             continue
         choice = int(c)
         if 1 <= choice <= len(options):
-            return options[choice - 1]
+            return options[choice-1]
         print(f"Please enter a number between 1 and {len(options)}")
 
 def run_color_picker(default_bg, default_pos, default_neg):
     background_options = {
-        "Black": "#000000",
-        "Electric Blue": "#0000FF",
-        "Neon Purple": "#BF00FF",
-        "Bright Cyan": "#00FFFF",
-        "Vibrant Magenta": "#FF00FF",
-        "Neon Green": "#39FF14",
-        "Hot Pink": "#FF69B4",
-        "Neon Orange": "#FF4500",
-        "Bright Yellow": "#FFFF00",
-        "Electric Lime": "#CCFF00",
-        "Vivid Red": "#FF0000",
-        "Deep Sky Blue": "#00BFFF",
-        "Vivid Violet": "#9F00FF",
-        "Fluorescent Pink": "#FF1493",
-        "Laser Lemon": "#FFFF66",
-        "Screamin' Green": "#66FF66",
-        "Ultra Red": "#FF2400",
-        "Radical Red": "#FF355E",
-        "Vivid Orange": "#FFA500",
-        "Electric Indigo": "#6F00FF"
+        "Black": "#000000", "Electric Blue": "#0000FF", "Neon Purple": "#BF00FF",
+        "Bright Cyan": "#00FFFF", "Vibrant Magenta": "#FF00FF", "Neon Green": "#39FF14",
+        "Hot Pink": "#FF69B4", "Neon Orange": "#FF4500", "Bright Yellow": "#FFFF00",
+        "Electric Lime": "#CCFF00", "Vivid Red": "#FF0000", "Deep Sky Blue": "#00BFFF",
+        "Vivid Violet": "#9F00FF", "Fluorescent Pink": "#FF1493", "Laser Lemon": "#FFFF66",
+        "Screamin' Green": "#66FF66", "Ultra Red": "#FF2400", "Radical Red": "#FF355E",
+        "Vivid Orange": "#FFA500", "Electric Indigo": "#6F00FF"
     }
     positive_options = {
-        "Vibrant Green": "#00FF00",
-        "Neon Green": "#39FF14",
-        "Electric Lime": "#CCFF00",
-        "Bright Yellow": "#FFFF00",
-        "Vivid Cyan": "#00FFFF",
-        "Electric Blue": "#0000FF",
-        "Neon Purple": "#BF00FF",
-        "Hot Pink": "#FF69B4",
-        "Neon Orange": "#FF4500",
-        "Vivid Red": "#FF0000",
-        "Screamin' Green": "#66FF66",
-        "Laser Lemon": "#FFFF66",
-        "Fluorescent Magenta": "#FF00FF",
-        "Hyper Blue": "#1F51FF",
-        "Electric Teal": "#00FFEF",
-        "Vivid Turquoise": "#00CED1",
-        "Radical Red": "#FF355E",
-        "Ultra Violet": "#7F00FF",
-        "Neon Coral": "#FF6EC7",
-        "Luminous Lime": "#BFFF00"
+        "Vibrant Green": "#00FF00", "Neon Green": "#39FF14", "Electric Lime": "#CCFF00",
+        "Bright Yellow": "#FFFF00", "Vivid Cyan": "#00FFFF", "Electric Blue": "#0000FF",
+        "Neon Purple": "#BF00FF", "Hot Pink": "#FF69B4", "Neon Orange": "#FF4500",
+        "Vivid Red": "#FF0000", "Screamin' Green": "#66FF66", "Laser Lemon": "#FFFF66",
+        "Fluorescent Magenta": "#FF00FF", "Hyper Blue": "#1F51FF", "Electric Teal": "#00FFEF",
+        "Vivid Turquoise": "#00CED1", "Radical Red": "#FF355E", "Ultra Violet": "#7F00FF",
+        "Neon Coral": "#FF6EC7", "Luminous Lime": "#BFFF00"
     }
     negative_options = {
-        "Vibrant Green": "#00FF00",
-        "Neon Orange": "#FF4500",
-        "Hot Pink": "#FF69B4",
-        "Vivid Cyan": "#00FFFF",
-        "Electric Blue": "#0000FF",
-        "Neon Purple": "#BF00FF",
-        "Bright Yellow": "#FFFF00",
-        "Electric Lime": "#CCFF00",
-        "Vivid Red": "#FF0000",
-        "Deep Pink": "#FF1493",
-        "Screamin' Green": "#66FF66",
-        "Laser Lemon": "#FFFF66",
-        "Fluorescent Magenta": "#FF00FF",
-        "Hyper Blue": "#1F51FF",
-        "Electric Teal": "#00FFEF",
-        "Vivid Turquoise": "#00CED1",
-        "Radical Red": "#FF355E",
-        "Ultra Violet": "#7F00FF",
-        "Neon Coral": "#FF6EC7",
-        "Luminous Lime": "#BFFF00"
+        "Vibrant Green": "#00FF00", "Neon Orange": "#FF4500", "Hot Pink": "#FF69B4",
+        "Vivid Cyan": "#00FFFF", "Electric Blue": "#0000FF", "Neon Purple": "#BF00FF",
+        "Bright Yellow": "#FFFF00", "Electric Lime": "#CCFF00", "Vivid Red": "#FF0000",
+        "Deep Pink": "#FF1493", "Screamin' Green": "#66FF66", "Laser Lemon": "#FFFF66",
+        "Fluorescent Magenta": "#FF00FF", "Hyper Blue": "#1F51FF", "Electric Teal": "#00FFEF",
+        "Vivid Turquoise": "#00CED1", "Radical Red": "#FF355E", "Ultra Violet": "#7F00FF",
+        "Neon Coral": "#FF6EC7", "Luminous Lime": "#BFFF00"
     }
-
     use_custom = input("Use custom colors? (y/n): ").lower() == 'y'
     if not use_custom:
         return default_bg, default_pos, default_neg
-
     print("\nBackground Colors:")
     bg_vals = show_color_options(background_options, "Pick a background color:")
     bg_pick = choose_color(bg_vals, "Enter number for background: ")
-
     print("\nPositive Envelope Colors:")
     pos_vals = show_color_options(positive_options, "Pick a positive color:")
     pos_pick = choose_color(pos_vals, "Enter number for positive: ")
-
     print("\nNegative Envelope Colors:")
     neg_vals = show_color_options(negative_options, "Pick a negative color:")
     neg_pick = choose_color(neg_vals, "Enter number for negative: ")
-
     return bg_pick, pos_pick, neg_pick
 
 ##############################################################################
 # 3) STRICT SIGN SUBDIVISION HELPERS
 ##############################################################################
 def strict_sign_subdivision(x, y):
-    new_x = []
-    new_y = []
-    color_val = []
+    new_x, new_y, color_val = [], [], []
     n = len(x)
     if n == 0:
         return np.array([]), np.array([]), np.array([])
     def sign_color(val):
         return 0 if val < 0 else 1
-    for i in range(n - 1):
+    for i in range(n-1):
         xi, yi = x[i], y[i]
         xip1, yip1 = x[i+1], y[i+1]
         new_x.append(xi)
@@ -283,7 +197,7 @@ def plot_strict_sign_colored_line(ax, xdata, ydata, neg_color, pos_color, linewi
     return lc, dummy_line
 
 ##############################################################################
-# 4) EnvelopePlot Class
+# 4) EnvelopePlot Class (Drawing System)
 ##############################################################################
 class EnvelopePlot:
     def __init__(self, wav_file, ax, bg_color, pos_color, neg_color):
@@ -301,14 +215,19 @@ class EnvelopePlot:
         self.audio_data = data.astype(float) / np.max(np.abs(data))
         self.num_points = len(self.audio_data)
         self.max_amp = np.max(np.abs(self.audio_data))
+        
+        # Faint line (original wave)
         self.faint_line, = self.ax.plot(self.audio_data, color=self.canvas_pos_color, alpha=0.15, lw=1)
+        
         self.drawing_pos = np.zeros(self.num_points)
         self.drawing_neg = np.zeros(self.num_points)
         self.line_pos, = self.ax.plot([], [], color=self.canvas_pos_color, lw=2, label='Positive')
         self.line_neg, = self.ax.plot([], [], color=self.canvas_neg_color, lw=2, label='Negative')
         self.final_line = None
         self.comparison_line_orig = None
-        self.comparison_line_mod  = None
+        self.comparison_line_mod = None
+        
+        # Just set a fixed range once at init
         margin = 0.1 * self.max_amp
         self.ax.set_xlim(0, self.num_points)
         self.ax.set_ylim(-self.max_amp - margin, self.max_amp + margin)
@@ -318,19 +237,25 @@ class EnvelopePlot:
         base_name = os.path.basename(wav_file)
         self.ax.text(10, self.max_amp - margin, base_name, fontsize=9, color='gray', alpha=0.8, verticalalignment='top')
         self.ax.set_aspect('auto')
+        
         self.is_drawing = False
         self.prev_idx = None
         self.last_state_pos = None
         self.last_state_neg = None
         self.background = None
-        self.offset = 0.0
+        
+        # We'll store offset but won't forcibly re-center the plot around it
+        self.offset = 0.0  
+        self.center_pos = 1.0
+        self.center_neg = 1.0
+        self.center_line = None
 
     def on_mouse_press(self, event):
         if event.inaxes != self.ax:
             return
         self.is_drawing = True
         if event.xdata is not None:
-            self.prev_idx = int(event.xdata)
+            self.prev_idx = int(round(event.xdata))
         self.last_state_pos = self.drawing_pos.copy()
         self.last_state_neg = self.drawing_neg.copy()
         self.update_drawing(event)
@@ -345,31 +270,39 @@ class EnvelopePlot:
     def update_drawing(self, event):
         if event.xdata is None or event.ydata is None:
             return
-        idx = int(event.xdata)
+        idx = int(round(event.xdata))
         if idx < 0 or idx >= self.num_points:
             return
-        amp = event.ydata
-        envelope = self.drawing_pos if amp >= 0 else self.drawing_neg
+        
+        # The new zero line is at y = self.offset.
+        rel_amp = event.ydata - self.offset
+        envelope = self.drawing_pos if rel_amp >= 0 else self.drawing_neg
+        
+        # Interpolate between points if dragging
         if self.prev_idx is not None and idx != self.prev_idx:
             start_idx = self.prev_idx
             end_idx = idx
             if start_idx > end_idx:
                 start_idx, end_idx = end_idx, start_idx
-                start_val = amp
+                start_val = rel_amp
                 end_val = envelope[self.prev_idx]
             else:
                 start_val = envelope[self.prev_idx]
-                end_val = amp
+                end_val = rel_amp
             envelope[start_idx:end_idx+1] = np.linspace(start_val, end_val, end_idx - start_idx + 1)
         else:
-            envelope[idx] = amp
+            envelope[idx] = rel_amp
+        
         self.prev_idx = idx
+        
         self.line_pos.set_data(np.arange(self.num_points), self.drawing_pos + self.offset)
         self.line_neg.set_data(np.arange(self.num_points), self.drawing_neg + self.offset)
+        
         if self.background is None:
             self.background = self.ax.figure.canvas.copy_from_bbox(self.ax.bbox)
         else:
             self.ax.figure.canvas.restore_region(self.background)
+        
         self.ax.draw_artist(self.line_pos)
         self.ax.draw_artist(self.line_neg)
         self.ax.figure.canvas.blit(self.ax.bbox)
@@ -386,24 +319,29 @@ class EnvelopePlot:
         self.redraw_lines()
 
     def redraw_lines(self):
+        # Update the user-drawn envelope lines
         self.line_pos.set_data(np.arange(self.num_points), self.drawing_pos + self.offset)
         self.line_neg.set_data(np.arange(self.num_points), self.drawing_neg + self.offset)
+        
+        # Shift the faint (original) wave line by offset too
+        if self.faint_line is not None:
+            self.faint_line.set_data(np.arange(self.num_points), self.audio_data + self.offset)
+
         self.ax.figure.canvas.draw_idle()
 
     def preview_envelope(self):
         adjusted = np.copy(self.audio_data)
         for i in range(len(adjusted)):
             if adjusted[i] > 0:
-                adjusted[i] = self.drawing_pos[i] + self.offset
+                adjusted[i] = self.center_pos * self.drawing_pos[i] + self.offset
             elif adjusted[i] < 0:
-                adjusted[i] = self.drawing_neg[i] + self.offset
+                adjusted[i] = self.center_neg * self.drawing_neg[i] + self.offset
         audio_int16 = (adjusted * 32767).astype(np.int16)
         sd.play(audio_int16, self.sample_rate)
         sd.wait()
 
-    def reapply_colors(self, bg_color, pos_color, neg_color,
-                       faint_alpha=0.15, final_wave_color="#00FF00",
-                       final_wave_alpha=0.4, orig_alpha=0.6, mod_alpha=0.8):
+    def reapply_colors(self, bg_color, pos_color, neg_color, faint_alpha=0.15,
+                       final_wave_color="#00FF00", final_wave_alpha=0.4, orig_alpha=0.6, mod_alpha=0.8):
         self.ax.set_facecolor(bg_color)
         self.fig.patch.set_facecolor(bg_color)
         if self.faint_line is not None:
@@ -422,9 +360,14 @@ class EnvelopePlot:
         if self.comparison_line_mod is not None:
             self.comparison_line_mod.set_color(pos_color)
             self.comparison_line_mod.set_alpha(mod_alpha)
-        margin = 0.1 * self.max_amp
-        self.ax.set_xlim(0, self.num_points)
-        self.ax.set_ylim(-self.max_amp - margin, self.max_amp + margin)
+        
+        # REMOVED the part that re-centers the axis around offset
+        # so you can actually see the wave shift visually.
+        #
+        # If you do want to ensure it's in view, you could do:
+        # self.ax.relim()
+        # self.ax.autoscale_view()
+
         self.ax.set_aspect('auto')
         self.ax.figure.canvas.draw_idle()
 
@@ -432,24 +375,15 @@ def get_modified_wave(ep):
     adjusted = np.copy(ep.audio_data)
     for i in range(len(adjusted)):
         if adjusted[i] > 0:
-            adjusted[i] = ep.drawing_pos[i] + ep.offset
+            adjusted[i] = ep.center_pos * ep.drawing_pos[i] + ep.offset
         elif adjusted[i] < 0:
-            adjusted[i] = ep.drawing_neg[i] + ep.offset
+            adjusted[i] = ep.center_neg * ep.drawing_neg[i] + ep.offset
     return adjusted
 
 ##############################################################################
-# 5) MULTI-FILE (STACKED) PROCESS
+# 5) MULTI-FILE PROCESS WITH VERTICAL SPACING, CENTERING, AND DRAWING PHASES
 ##############################################################################
 def process_multi_division():
-    """
-    Main function for multi-division wave processing.
-    The user picks how many subplots (stacked vertically) and then chooses whether to
-    enter a vertical spacing adjustment phase. In the sequential adjustment phase, the
-    subplots are processed one by one from the top. For each subplot, a slider is displayed;
-    once you adjust it and press Enter in the terminal, that subplot’s height is locked.
-    Temporary slider axes are removed before any images are saved.
-    """
-    plt.ion()  # enable interactive mode so windows appear
     print("\n=== Multi-Division Wave Processing ===")
     try:
         num_div = int(input("Enter number of divisions (subplots): "))
@@ -479,157 +413,132 @@ def process_multi_division():
         print(f"Copied {wf} to {new_folder}")
 
     print("\n=== Drawing Canvas Color Picker ===")
-    default_bg  = "#000000"
-    default_pos = "#00FF00"
-    default_neg = "#00FF00"
+    default_bg, default_pos, default_neg = "#000000", "#00FF00", "#00FF00"
     draw_bg, draw_pos, draw_neg = run_color_picker(default_bg, default_pos, default_neg)
 
-    use_adjustment = input("Do you want to readjust the vertical spacing of subplots? (y/n): ").strip().lower() == 'y'
-    if use_adjustment:
-        fig, axes = plt.subplots(num_div, 1, figsize=(16, 3 * num_div), facecolor=draw_bg)
-        if num_div == 1:
-            axes = [axes]
-        total_available = 0.95 - 0.05  # 0.90 normalized height available
-        locked = [False] * num_div
-        locked_heights = [0.0] * num_div
-        weights = [1.0] * num_div  # initial weight for each subplot
+    fig, axes = plt.subplots(num_div, 1, figsize=(16,3*num_div), facecolor=draw_bg)
+    fig.subplots_adjust(left=0.06, right=0.98, top=0.95, bottom=0.05, hspace=0)
+    if num_div == 1:
+        axes = [axes]
 
-        def update_positions():
-            sum_locked = sum(locked_heights[i] for i in range(num_div) if locked[i])
-            unlocked = [i for i in range(num_div) if not locked[i]]
-            total_weight = sum(weights[i] for i in unlocked) if unlocked else 0
-            current_top = 0.95
-            for i in range(num_div):
-                if locked[i]:
-                    h = locked_heights[i]
-                else:
-                    h = (weights[i] / total_weight) * (total_available - sum_locked) if total_weight > 0 else 0
-                axes[i].set_position([0.06, current_top - h, 0.92, h])
-                current_top -= h
+    # --- VERTICAL SPACING ADJUSTMENT PHASE ---
+    adjust = input("Do you want to adjust vertical spacing? (y/n): ").strip().lower()
+    if adjust == 'y':
+        print("\n=== Readjustment Phase ===")
+        fixed_top, fixed_bottom = 0.95, 0.05
+        total_available = fixed_top - fixed_bottom
+        heights = [total_available/num_div]*num_div
+        positions = []
+        current_top = fixed_top
+        for h in heights:
+            bottom = current_top - h
+            positions.append([0.06, bottom, 0.92, h])
+            current_top = bottom
+        for i, ax in enumerate(axes):
+            ax.set_position(positions[i])
+        slider_height = 0.1
+        slider_insets = []
+        for i, ax in enumerate(axes):
+            inset_ax = ax.inset_axes([0.05,0.45,0.9,slider_height], facecolor="lightgray")
+            s = Slider(inset_ax, f"Height {i+1}", 0.05, total_available, valinit=heights[i],
+                      valfmt="%.2f", color="blue")
+            slider_insets.append(s)
+        
+        plt.pause(0.1)
+        current_positions = positions.copy()
+        weights = heights.copy()
+        def slider_callback(val, i):
+            nonlocal current_positions, weights, axes, fixed_bottom, total_available
+            pos = current_positions[i]
+            top = pos[1]+pos[3]
+            new_height = val
+            new_bottom = top - new_height
+            current_positions[i] = [pos[0], new_bottom, pos[2], new_height]
+            weights[i] = new_height
+            if i+1 < num_div:
+                available = new_bottom - fixed_bottom
+                total_weight = sum(weights[j] for j in range(i+1,num_div))
+                current_top = new_bottom
+                for j in range(i+1,num_div):
+                    new_h = (weights[j]/total_weight)*available if total_weight>0 else available/(num_div-i-1)
+                    weights[j] = new_h
+                    new_bottom_j = current_top - new_h
+                    current_positions[j] = [current_positions[j][0], new_bottom_j, current_positions[j][2], new_h]
+                    current_top = new_bottom_j
+            for j, ax in enumerate(axes):
+                ax.set_position(current_positions[j])
+                new_inset_pos = [0.05,0.45,0.9,slider_height]
+                slider_insets[j].ax.set_position(new_inset_pos)
             fig.canvas.draw_idle()
+        for i, s in enumerate(slider_insets):
+            s.on_changed(lambda val, i=i: slider_callback(val, i))
+        print("Adjust vertical spacing as desired. Press Enter when done.")
+        input()
+        for s in slider_insets:
+            s.ax.remove()
+        fig.canvas.draw_idle()
+    # --- END VERTICAL SPACING ADJUSTMENT ---
 
-        update_positions()
-        # Sequentially adjust each subplot from top to bottom.
-        for i in range(num_div):
-            if not locked[i]:
-                pos = axes[i].get_position().bounds
-                slider_ax = fig.add_axes([pos[0], pos[1] + pos[3]/2 - 0.03/2, pos[2], 0.03],
-                                           facecolor='lightgray')
-                slider = Slider(slider_ax, f"Height {i+1}", 0.1, 5.0, valinit=weights[i])
-                slider.on_changed(lambda val, i=i: (weights.__setitem__(i, val), update_positions()))
-                print(f"Adjust height for subplot {i+1} and press Enter to lock it.")
-                input()  # Wait for user to press Enter
-                locked[i] = True
-                locked_heights[i] = axes[i].get_position().height
-                slider_ax.remove()
-                update_positions()
-        # End of sequential adjustment.
-    else:
-        manual_choice = input("Use default subdivisions or manual controlled? (default/manual): ").strip().lower()
-        if manual_choice == 'manual':
-            fig, axes = plt.subplots(num_div, 1, figsize=(16, 3 * num_div), facecolor=draw_bg)
-            if num_div == 1:
-                axes = [axes]
-            weights = [1.0] * num_div
-            slider_dict = {}
-            current_slider_index = None
-            def update_axes_positions():
-                left_margin = 0.06
-                right_margin = 0.98
-                bottom_margin = 0.05
-                top_margin = 0.95
-                available_height = top_margin - bottom_margin
-                total_weight = sum(weights)
-                current_bottom = bottom_margin
-                for i in range(num_div-1, -1, -1):
-                    h = (weights[i] / total_weight) * available_height
-                    axes[i].set_position([left_margin, current_bottom, right_margin - left_margin, h])
-                    current_bottom += h
-                fig.canvas.draw_idle()
-            def create_slider_for_subplot(i):
-                pos = axes[i].get_position().bounds
-                slider_height = 0.03
-                slider_ax = fig.add_axes([pos[0], pos[1] + pos[3]/2 - slider_height/2, pos[2], slider_height],
-                                         facecolor='lightgray')
-                slider = Slider(slider_ax, f"Height {i+1}", 0.1, 5.0, valinit=weights[i])
-                slider.on_changed(lambda val, i=i: (weights.__setitem__(i, val), update_axes_positions()))
-                slider_dict[i] = slider
-            def hide_slider(i):
-                if i in slider_dict:
-                    slider_dict[i].ax.remove()
-                    fig.canvas.draw_idle()
-            def on_motion(event):
-                nonlocal current_slider_index
-                active_subplot = None
-                for i, ax in enumerate(axes):
-                    if event.inaxes == ax:
-                        active_subplot = i
-                        break
-                if active_subplot is not None:
-                    if current_slider_index != active_subplot:
-                        if current_slider_index is not None:
-                            hide_slider(current_slider_index)
-                        create_slider_for_subplot(active_subplot)
-                        current_slider_index = active_subplot
-                else:
-                    if current_slider_index is not None:
-                        hide_slider(current_slider_index)
-                        current_slider_index = None
-            cid_motion = fig.canvas.mpl_connect('motion_notify_event', on_motion)
-            update_axes_positions()
-            plt.show()
-            input("Hover over each subplot to adjust its height using the slider. When done, press Enter.")
-            fig.canvas.mpl_disconnect(cid_motion)
-            for slider in slider_dict.values():
-                slider.ax.remove()
-            update_axes_positions()
-        else:
-            fig, axes = plt.subplots(num_div, 1, figsize=(16, 3 * num_div), facecolor=draw_bg)
-            fig.subplots_adjust(left=0.06, right=0.98, top=0.95, bottom=0.05, hspace=0)
-            if num_div == 1:
-                axes = [axes]
-
-    # Create EnvelopePlot objects
+    # --- CREATE EnvelopePlot INSTANCES ---
     envelope_plots = []
     for i, wf in enumerate(wav_files):
         ep = EnvelopePlot(wf, axes[i], draw_bg, draw_pos, draw_neg)
         envelope_plots.append(ep)
         axes[i].set_aspect('auto')
-        if i == 0:
+        if i==0:
             leg = axes[i].legend(loc='upper right')
             leg.get_frame().set_alpha(0.5)
-            axes[i].text(0.65, 0.90,
-                         "p=preview\nr=reset\nu=undo",
-                         transform=axes[i].transAxes,
-                         fontsize=8,
-                         color='white',
-                         ha='left',
-                         va='top',
-                         bbox=dict(boxstyle="round", fc="black", ec="none", alpha=0.5))
-
-    print("\nIn the drawing canvas:")
-    print(" - Press 'p' to preview ALL subplots.")
-    print(" - Press 'r' to reset the envelope for the subplot under your mouse.")
-    print(" - Press 'u' to undo the last stroke for this subplot.")
-
+            axes[i].text(0.65,0.90,"p=preview\nr=reset\nu=undo",
+                         transform=axes[i].transAxes,fontsize=8,color='white',
+                         ha='left',va='top',
+                         bbox=dict(boxstyle="round",fc="black",ec="none",alpha=0.5))
+    
+    # --- CENTERING PHASE ---
+    print("\n=== Centering Phase ===")
+    center_sliders = []
+    for i, ep in enumerate(envelope_plots):
+        ax = ep.ax
+        inset_ax = ax.inset_axes([0.35,0.05,0.3,0.1], facecolor="lightgray")
+        slider = Slider(inset_ax, "Center", -0.9, 0.9, valinit=ep.offset, valfmt="%.2f", color="orange")
+        center_sliders.append(slider)
+        
+        # We do NOT recenter the axis limits here, so you can see the wave physically move.
+        def update_center(val, ep=ep):
+            ep.offset = val
+            ep.center_pos = 1 - val
+            ep.center_neg = 1 + val
+            # Removed the line that sets ep.ax.set_ylim(...) so it won't re-center
+            ep.redraw_lines()
+            ep.ax.figure.canvas.draw_idle()
+        
+        slider.on_changed(update_center)
+    print("Adjust centering sliders as desired.")
+    input("Press Enter to finalize centering phase...")
+    for slider in center_sliders:
+        slider.ax.remove()
+    fig.canvas.draw_idle()
+    
+    # --- We also remove the code that repositions the bottom spine to ep.offset ---
+    # so you can see the wave actually shift above/below zero visually.
+    
+    # --- DRAWING PHASE ---
+    print("\n=== Drawing Phase ===")
+    print("Use your mouse to draw the envelope.\nPress 'p' to preview, 'r' to reset, 'u' to undo the last stroke.")
     def on_press(event):
         for ep in envelope_plots:
             if event.inaxes == ep.ax:
                 ep.on_mouse_press(event)
                 break
-
     def on_move(event):
         for ep in envelope_plots:
             if event.inaxes == ep.ax:
                 ep.on_mouse_move(event)
                 break
-
     def on_release(event):
         for ep in envelope_plots:
             if event.inaxes == ep.ax:
                 ep.on_mouse_release(event)
                 break
-
     def on_key(event):
         if not event.key:
             return
@@ -638,7 +547,7 @@ def process_multi_division():
             print("Previewing ALL subplots...")
             for epp in envelope_plots:
                 epp.preview_envelope()
-        elif k in ['r', 'u']:
+        elif k in ['r','u']:
             for ep in envelope_plots:
                 if event.inaxes == ep.ax:
                     if k == 'r':
@@ -648,27 +557,30 @@ def process_multi_division():
                         ep.undo_envelope()
                         print("Undo last stroke for this subplot.")
                     break
-
-    cid_press   = fig.canvas.mpl_connect('button_press_event', on_press)
-    cid_move    = fig.canvas.mpl_connect('motion_notify_event', on_move)
+    cid_press = fig.canvas.mpl_connect('button_press_event', on_press)
+    cid_move = fig.canvas.mpl_connect('motion_notify_event', on_move)
     cid_release = fig.canvas.mpl_connect('button_release_event', on_release)
-    cid_key     = fig.canvas.mpl_connect('key_press_event', on_key)
-
-    plt.show()
-    input("Drawing phase active. When done, press Enter in the terminal.")
+    cid_key = fig.canvas.mpl_connect('key_press_event', on_key)
+    
+    plt.show(block=False)
+    print("Drawing phase active. Press Enter when done.")
+    input()
     fig.canvas.mpl_disconnect(cid_press)
     fig.canvas.mpl_disconnect(cid_move)
     fig.canvas.mpl_disconnect(cid_release)
     fig.canvas.mpl_disconnect(cid_key)
-
-    print("\n=== final_drawing Color Picker ===")
+    
+    # --- FINAL DRAWING, SAVING, AND COMPARISON PHASES ---
+    print("\n=== Final Drawing Color Picker ===")
     f_bg, f_pos, f_neg = run_color_picker(draw_bg, draw_pos, draw_neg)
     for ep in envelope_plots:
         ep.reapply_colors(f_bg, f_pos, f_neg)
+    first_base = os.path.splitext(os.path.basename(wav_files[0]))[0]
+    new_folder = os.path.join(os.getcwd(), first_base)
     final_path = os.path.join(new_folder, "final_drawing.png")
     fig.savefig(final_path)
     print("final_drawing.png saved to", final_path)
-
+    
     for idx, ep in enumerate(envelope_plots, 1):
         csv_path = os.path.join(new_folder, f"envelope_{idx}.csv")
         with open(csv_path, "w", newline="") as f_:
@@ -677,13 +589,13 @@ def process_multi_division():
             for i in range(ep.num_points):
                 writer.writerow([i, ep.drawing_pos[i], ep.drawing_neg[i]])
         print(f"Envelope data saved to {csv_path}")
-
+    
         mod_wave = get_modified_wave(ep)
         wav_path = os.path.join(new_folder, f"{idx}_future_{os.path.basename(ep.wav_file)}")
         wavfile.write(wav_path, ep.sample_rate, (mod_wave * 32767).astype(np.int16))
         print(f"Modified audio saved to {wav_path}")
-
-    print("\n=== natural_lang Color Picker ===")
+    
+    print("\n=== Natural Language Color Picker ===")
     n_bg, n_pos, n_neg = run_color_picker(f_bg, f_pos, f_neg)
     for ep in envelope_plots:
         if ep.faint_line is not None:
@@ -700,7 +612,8 @@ def process_multi_division():
             ep.final_line = None
         mod_wave = get_modified_wave(ep)
         xvals = np.arange(len(mod_wave))
-        plot_strict_sign_colored_line(ep.ax, xvals, mod_wave, neg_color=n_neg, pos_color=n_pos,
+        plot_strict_sign_colored_line(ep.ax, xvals, mod_wave,
+                                      neg_color=n_neg, pos_color=n_pos,
                                       linewidth=2, label="Modified Wave")
     for ep in envelope_plots:
         ep.reapply_colors(n_bg, n_pos, n_neg)
@@ -708,7 +621,7 @@ def process_multi_division():
     nat_path = os.path.join(new_folder, "natural_lang.png")
     fig.savefig(nat_path)
     print("natural_lang.png saved to", nat_path)
-
+    
     for ep in envelope_plots:
         if ep.final_line is not None:
             ep.final_line.remove()
@@ -716,7 +629,8 @@ def process_multi_division():
         ep.comparison_line_orig, = ep.ax.plot(ep.audio_data, color=n_neg, alpha=0.6, lw=2, label='Original Wave')
         mod_data = get_modified_wave(ep)
         ep.comparison_line_mod, = ep.ax.plot(mod_data, color=n_pos, alpha=0.8, lw=2, label='Modified Wave')
-    print("\n=== wave_comparison Color Picker ===")
+    
+    print("\n=== Wave Comparison Color Picker ===")
     c_bg, c_pos, c_neg = run_color_picker(n_bg, n_pos, n_neg)
     for ep in envelope_plots:
         ep.reapply_colors(c_bg, c_pos, c_neg)
@@ -728,9 +642,8 @@ def process_multi_division():
     cmp_path = os.path.join(new_folder, "wave_comparison.png")
     fig.savefig(cmp_path)
     print("wave_comparison.png saved to", cmp_path)
-
     plt.close()
-    plt.ioff()  # turn off interactive mode
+    plt.ioff()
 
 def main():
     while True:

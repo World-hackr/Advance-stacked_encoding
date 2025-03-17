@@ -1,106 +1,129 @@
-Advanced Natural Language Wave Processing Tool
-Table of Contents
-Overview
-Features
-Installation and Setup
-Usage
-Wave Generation / Import
-Color Customization
-Vertical Spacing Adjustment
-Interactive Envelope Drawing
-Export & Visualization
-How It Works
-Layman Explanation
-Technical Explanation
-Sample Commit Message
-Overview
-This tool allows you to create or import sound files and interactively modify their waveforms. You can generate a custom waveform (or load an existing one), draw envelopes on the waveform, adjust the layout of multiple wave displays, and export the results in various formats including CSV, modified WAV files, and images. The project is designed to provide both a user-friendly interface for non-technical users and detailed control for technical users.
+# Envelope Waveform Editor
 
-Features
-Custom Wave Generation:
-Generate waveforms using presets (sine, square, triangle, sawtooth) or via manual entry (specify frequency, samples per wavelength, and periods).
+Envelope Waveform Editor is an interactive Python application that lets you generate, modify, and process audio waveforms visually. You can create custom audio waves, draw envelopes over them, adjust vertical spacing and centering, and finally generate modified audio files and images. This tool is designed to be both accessible to non-technical users and intriguing for technical enthusiasts.
 
-Existing Wave Import:
-Load an existing WAV file for processing.
+---
 
-Multi-Division Stacked Wave Processing:
-Stack multiple waveforms vertically for simultaneous editing.
+## Table of Contents
 
-Color Customization:
-Customize background, positive envelope, and negative envelope colors through an interactive color picker.
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+  - [Custom Wave Generation](#custom-wave-generation)
+  - [Drawing Canvas & Color Picker](#drawing-canvas--color-picker)
+  - [Envelope Drawing and Editing](#envelope-drawing-and-editing)
+  - [Vertical Spacing & Centering](#vertical-spacing--centering)
+  - [Final Outputs](#final-outputs)
+- [Installation & Requirements](#installation--requirements)
+- [Usage Instructions](#usage-instructions)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-Optional Vertical Spacing Adjustment:
-Adjust the vertical spacing of the stacked subplots using inset sliders. This adjustment phase repositions subplots (without gaps) by modifying only the lower boundary of each subplot while keeping the top fixed.
+---
 
-Interactive Envelope Drawing:
-Draw envelopes on each waveform interactively with your mouse (with undo and reset options) and preview the modified audio.
+## Overview
 
-Export Options:
-Export your work as CSV data, modified WAV files, and images including:
+The Envelope Waveform Editor allows you to:
+- **Generate custom audio waves:** Choose between preset waveforms (sine, square, triangle, sawtooth) or enter your own parameters.
+- **Interactively draw envelopes:** Use your mouse to draw over the waveform to specify positive and negative envelope adjustments.
+- **Adjust display and audio properties:** Fine-tune vertical spacing, centering, and envelope shape using interactive sliders.
+- **Export final files:** Save the modified audio as a WAV file (with DC offset correction) and export several PNG images showing different visualizations of your work (e.g., final drawing, natural language style, and wave comparison).
 
-Final Drawing image.
-Natural Language visualization image (a continuous wave using strict sign subdivision).
-Wave Comparison image (overlaying the original and modified waveforms).
-Installation and Setup
-Prerequisites:
+---
 
-Python (version 3.x recommended)
-Required Python packages: matplotlib, numpy, scipy, sounddevice
-Installation:
+## Features
 
-Install the required packages using pip:
+### For Non-Technical Users
+
+- **Easy-to-use Interface:** Follow on-screen prompts to choose wave types, draw envelopes, and adjust the view without needing to know any coding.
+- **Visual Feedback:** See your drawing exactly as it appears on the screen in the final image output.
+- **Audio Preview:** Listen to a live preview of your modified audio to ensure it sounds as desired.
+- **File Export:** Automatically save your work as WAV audio files and PNG images.
+
+### For Tech Enthusiasts
+
+- **Custom Wave Generation:** Specify frequency, samples per wavelength, and number of periods to create precise waveforms.
+- **Envelope Editing:** The envelope is stored as separate positive and negative arrays, relative to a user-defined baseline. This data is saved in CSV format and later used to modify the waveform.
+- **Interactive Sliders:** Adjust vertical spacing and centering using Matplotlib’s Slider widget.
+- **DC Offset Correction:** When saving the final WAV file, the code subtracts the centering offset to eliminate unwanted DC bias.
+- **Multiple Visualizations:** The application exports three types of images:
+  - **Final Drawing:** The envelope exactly as drawn.
+  - **Natural Language Visualization:** A strict, colored line representation of the envelope.
+  - **Wave Comparison:** Overlay of the original and modified waveforms for direct comparison.
+- **CSV as Data Source:** The envelope data is exported to CSV files, which are later reloaded to recalculate and generate the modified audio and visualizations.
+
+---
+
+## How It Works
+
+### Custom Wave Generation
+
+- **Presets & Manual Entry:** Choose from preset waveforms or manually enter frequency, samples per wavelength, and periods.
+- **Audio File Creation:** The chosen parameters generate a normalized waveform, which is then saved as a WAV file.
+
+### Drawing Canvas & Color Picker
+
+- **Color Picker:** Choose background, positive, and negative colors for the drawing canvas through a simple text-based menu.
+- **Drawing Interface:** The canvas displays the waveform, and you draw the envelope over it using the mouse.
+
+### Envelope Drawing and Editing
+
+- **Envelope Data:** The user’s mouse input is captured relative to a “centering” baseline (offset). Two arrays—one for positive envelope values and one for negative—are created.
+- **CSV Export:** After drawing, the envelope data is saved into CSV files, serving as a “source of truth” for further processing.
+
+### Vertical Spacing & Centering
+
+- **Vertical Spacing:** Interactive sliders allow you to adjust the vertical spacing of the subplots, ensuring your drawings are clearly visible.
+- **Centering Phase:** A centering slider shifts the waveform up or down. For visualization, the drawn envelope is shown with this offset, but for the final WAV file, the offset is subtracted to remove any DC bias.
+
+### Final Outputs
+
+- **Modified Audio Files:** The CSV envelope data is reloaded to recalculate the modified waveform. When creating the final WAV file, the centering offset is subtracted to avoid a DC offset.
+- **PNG Images:**
+  - **Final Drawing:** Saves the envelope as it was drawn.
+  - **Natural Language Visualization:** Uses a strict, colored line to represent the envelope while keeping the drawn shift intact.
+  - **Wave Comparison:** Overlays the original and modified waveforms for easy comparison, also maintaining the envelope’s shifted position.
+
+---
+
+## Installation & Requirements
+
+- **Python 3.x**
+- Required libraries:
+  - `matplotlib`
+  - `numpy`
+  - `scipy`
+  - `sounddevice`
+  - `csv` (standard library)
+  - `os`, `sys`, `shutil` (standard libraries)
+
+To install the Python packages (if not already installed):
+
+```bash
+pip install matplotlib numpy scipy sounddevice
+Usage Instructions
+Run the Script:
+Execute the script in your terminal:
 bash
 Copy
 Edit
-pip install matplotlib numpy scipy sounddevice
-Download the Code:
+python your_script_name.py
+Follow Prompts:
+Choose whether to generate a custom waveform or use an existing WAV file.
+Pick colors for the drawing canvas and envelope lines.
+Adjust vertical spacing and centering using interactive sliders.
+Use your mouse to draw the envelope on the displayed waveform.
+Preview your modified audio by pressing p, reset or undo changes with r or u.
+Export Files:
+After completing the drawing phase, the application will export:
+CSV files containing the envelope data.
+A final drawing image (final_drawing.png).
+Modified audio files (WAV).
+Additional visualizations (natural_lang.png and wave_comparison.png).
+Troubleshooting
+No Audio Output: Ensure your sound device is configured correctly and the volume is up.
+File Not Found Errors: Double-check the paths provided when prompted.
+Graphical Issues: If the waveform looks squeezed or shifted, verify the centering slider and ensure the axis limits are set to [0, num_points].
+License
+This project is provided "as is" without warranty of any kind. You may use, modify, and distribute this tool according to your needs.
 
-Clone or download the repository containing the source code.
-Usage
-Wave Generation / Import
-When you run the tool, you will be prompted to either generate a custom wave (choose from presets or manually enter parameters) or import an existing WAV file.
-
-Color Customization
-You will then choose custom colors for the drawing canvas, as well as for the positive and negative envelopes, through an interactive color picker.
-
-Vertical Spacing Adjustment
-After color selection, the tool offers an optional vertical spacing adjustment phase:
-
-If you choose "y", inset sliders will appear in each subplot.
-Use these sliders to adjust each subplot’s lower boundary while the top remains fixed.
-The subplots will automatically reallocate the remaining space, ensuring there are no gaps.
-Press Enter to finish the adjustment phase; the sliders will then be removed.
-Interactive Envelope Drawing
-In the drawing phase, your waveform is displayed along with a faint reference of the original file. You can draw envelopes directly on the waveform:
-
-p – Preview the modified audio.
-r – Reset the envelope for the subplot under your mouse.
-u – Undo the last stroke for the subplot under your mouse.
-Export & Visualization
-After the drawing phase:
-
-The tool exports CSV files containing the envelope data.
-Modified WAV files are generated.
-Additional images are created:
-Final Drawing: Shows the final envelope.
-Natural Language Visualization: A continuous line visualization using strict sign subdivision.
-Wave Comparison: An overlay of the original and modified waveforms with transparency.
-How It Works
-Layman Explanation
-Imagine you have a sound wave picture like the ones seen in music editing software. This tool lets you create a new sound wave or load one that already exists. Then, you can “draw” over the wave with your mouse—like drawing on paper—to change its shape. You can also adjust how the waves are arranged on the screen (for example, how much space each one takes). Once you’re done, the tool saves your work as new sound files and images that show your changes. It’s a way to customize your own sound picture!
-
-Technical Explanation
-Wave Generation/Import:
-The tool either generates a waveform based on preset or user-defined parameters or loads an existing WAV file and normalizes it.
-
-Color Customization:
-Users select colors for the canvas and envelope lines using an interactive color picker that prints ANSI swatches to the console.
-
-Vertical Spacing Adjustment:
-An optional phase allows users to reallocate the vertical space between subplots using inset sliders. Each slider controls the lower boundary of its subplot while keeping its top fixed. Subsequent subplots shift accordingly to maintain a continuous, gapless layout.
-
-Interactive Envelope Drawing:
-The EnvelopePlot class handles interactive envelope drawing. It captures mouse events (press, move, release) to draw and update envelope lines in real time with minimal redraw overhead (using a blit approach).
-
-Export Routines:
-After drawing, the tool exports envelope data to CSV files, generates modified WAV files (applying the drawn envelope), and produces images (final drawing, natural language visualization, and wave comparison) by reapplying user-defined color schemes.
